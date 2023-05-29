@@ -1,7 +1,7 @@
 # --------------------------------------------------------
-# Tensorflow Faster R-CNN
+# Faster R-CNN
 # Licensed under The MIT License [see LICENSE for details]
-# Written by Jiasen Lu, Jianwei Yang, based on code from Ross Girshick
+# Modified by Qinyi Zhao, based on code from Ross Girshick, Jiasen Lu, Jianwei Yang
 # --------------------------------------------------------
 from __future__ import absolute_import
 from __future__ import division
@@ -21,7 +21,7 @@ from torch.autograd import Variable
 import torch.nn as nn
 import torch.optim as optim
 
-import torchvision.transforms as transforms
+# import torchvision.transforms as transforms
 import torchvision.datasets as dset
 from scipy.misc import imread
 from roi_data_layer.roidb import combined_roidb
@@ -32,8 +32,9 @@ from model.rpn.bbox_transform import clip_boxes
 from model.roi_layers import nms
 from model.rpn.bbox_transform import bbox_transform_inv
 from model.utils.net_utils import save_net, load_net, vis_detections
+from model.utils.vis_utils import vis_proposals
 from model.utils.blob import im_list_to_blob
-from model.faster_rcnn.vgg16 import vgg16
+# from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet
 import pdb
 
@@ -55,14 +56,14 @@ def parse_args():
                       help='optional config file',
                       default='cfgs/vgg16.yml', type=str)
   parser.add_argument('--net', dest='net',
-                      help='vgg16, res50, res101, res152',
+                      help='res50, res101, res152',
                       default='res101', type=str)
   parser.add_argument('--set', dest='set_cfgs',
                       help='set config keys', default=None,
                       nargs=argparse.REMAINDER)
   parser.add_argument('--load_dir', dest='load_dir',
                       help='directory to load models',
-                      default="/srv/share/jyang375/models")
+                      default="models")
   parser.add_argument('--image_dir', dest='image_dir',
                       help='directory to load images for demo',
                       default="images")
@@ -83,16 +84,16 @@ def parse_args():
                       default=1, type=int)
   parser.add_argument('--checkepoch', dest='checkepoch',
                       help='checkepoch to load network',
-                      default=1, type=int)
+                      default=20, type=int)
   parser.add_argument('--checkpoint', dest='checkpoint',
                       help='checkpoint to load network',
-                      default=10021, type=int)
+                      default=2504, type=int)
   parser.add_argument('--bs', dest='batch_size',
                       help='batch_size',
                       default=1, type=int)
-  parser.add_argument('--vis', dest='vis',
-                      help='visualization mode',
-                      action='store_true')
+  # parser.add_argument('--vis', dest='vis',
+  #                     help='visualization mode',
+  #                     action='store_true')
   parser.add_argument('--webcam_num', dest='webcam_num',
                       help='webcam ID number',
                       default=-1, type=int)
@@ -173,9 +174,9 @@ if __name__ == '__main__':
                        'sheep', 'sofa', 'train', 'tvmonitor'])
 
   # initilize the network here.
-  if args.net == 'vgg16':
-    fasterRCNN = vgg16(pascal_classes, pretrained=False, class_agnostic=args.class_agnostic)
-  elif args.net == 'res101':
+  # if args.net == 'vgg16':
+  #   fasterRCNN = vgg16(pascal_classes, pretrained=False, class_agnostic=args.class_agnostic)
+  if args.net == 'res101':
     fasterRCNN = resnet(pascal_classes, 101, pretrained=False, class_agnostic=args.class_agnostic)
   elif args.net == 'res50':
     fasterRCNN = resnet(pascal_classes, 50, pretrained=False, class_agnostic=args.class_agnostic)
@@ -241,7 +242,8 @@ if __name__ == '__main__':
     cap = cv2.VideoCapture(webcam_num)
     num_images = 0
   else:
-    imglist = os.listdir(args.image_dir)
+    # imglist = os.listdir(args.image_dir)
+    imglist = [f for f in os.listdir(args.image_dir) if f.endswith('.jpg')]
     num_images = len(imglist)
 
   print('Loaded Photo: {} images.'.format(num_images))
@@ -294,6 +296,13 @@ if __name__ == '__main__':
 
       scores = cls_prob.data
       boxes = rois.data[:, :, 1:5]
+      
+      # Visualize proposal box
+      if vis:
+        boxes_proposals = clip_boxes(rois.data[:, :, 1:5].clone(), im_info.data, 1)
+        boxes_proposals /= im_scales[0]
+        boxes_proposals = boxes_proposals.squeeze()
+        im2show_proposals = vis_proposals(np.copy(im), boxes_proposals)
 
       if cfg.TEST.BBOX_REG:
           # Apply bounding-box regression deltas
@@ -320,6 +329,7 @@ if __name__ == '__main__':
 
           pred_boxes = bbox_transform_inv(boxes, box_deltas, 1)
           pred_boxes = clip_boxes(pred_boxes, im_info.data, 1)
+
       else:
           # Simply repeat the boxes, once for each class
           pred_boxes = np.tile(boxes, (1, scores.shape[1]))
@@ -350,7 +360,7 @@ if __name__ == '__main__':
             # keep = nms(cls_dets, cfg.TEST.NMS, force_cpu=not cfg.USE_GPU_NMS)
             keep = nms(cls_boxes[order, :], cls_scores[order], cfg.TEST.NMS)
             cls_dets = cls_dets[keep.view(-1).long()]
-            if vis:
+            if vis: 
               im2show = vis_detections(im2show, pascal_classes[j], cls_dets.cpu().numpy(), 0.5)
 
       misc_toc = time.time()
@@ -364,8 +374,10 @@ if __name__ == '__main__':
       if vis and webcam_num == -1:
           # cv2.imshow('test', im2show)
           # cv2.waitKey(0)
-          result_path = os.path.join(args.image_dir, imglist[num_images][:-4] + "_det.jpg")
+          result_path = os.path.join(args.image_dir+"/det", imglist[num_images][:-4] + "_det.jpg")
           cv2.imwrite(result_path, im2show)
+          p_result_path = os.path.join(args.image_dir+"/proposal_box", imglist[num_images][:-4] + "_proposals.jpg")
+          cv2.imwrite(p_result_path, im2show_proposals)
       else:
           im2showRGB = cv2.cvtColor(im2show, cv2.COLOR_BGR2RGB)
           cv2.imshow("frame", im2showRGB)
