@@ -10,9 +10,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# import cv2
 import numpy as np
 import numpy.random as npr
 from scipy.misc import imread
+# from imageio import imread
 from model.utils.config import cfg
 from model.utils.blob import prep_im_for_blob, im_list_to_blob
 import pdb
@@ -62,8 +64,13 @@ def _get_image_blob(roidb, scale_inds):
   processed_ims = []
   im_scales = []
   for i in range(num_images):
-    #im = cv2.imread(roidb[i]['image'])
-    im = imread(roidb[i]['image'])
+    # im = cv2.imread(roidb[i]['image'])
+    try:
+      im = imread(roidb[i]['image'])
+    except:
+      print(i)
+      print(roidb[i]['image'])
+      raise Exception
 
     if len(im.shape) == 2:
       im = im[:,:,np.newaxis]
