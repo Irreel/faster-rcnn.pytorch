@@ -45,7 +45,7 @@ python test_net.py --dataset pascal_voc --net res101 \
                    --checksession $SESSION --checkepoch $EPOCH --checkpoint $CHECKPOINT \
                    --cuda
 ```
-Specify the specific model session, chechepoch and checkpoint, e.g., SESSION=1, EPOCH=20, CHECKPOINT=2504.
+Specify the specific model session, chechepoch and checkpoint, or just simply `python test_net.py` by default SESSION=1, EPOCH=20, CHECKPOINT=2504.
 
 ## Visualizing proposal boxes
 Visualize the **proposal boxes** on four testing images.
@@ -69,12 +69,10 @@ Then you will find the detection results in folder `$ROOT/images/det` and corres
 ## Results
 PASCAL VOC 2007 (Train/Test: 07trainval/07test, scale=600, ROI Align)
 
-model    | batch size | lr        | lr_decay | max_epoch     |  time/epoch | mAP
+model    | batch size | lr        | lr_decay | epoch   | mAP
 ---------|-----|--------|-----|-----|-------|-----
-[Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0)   | 1 | 1e-3 | 5   | 7   |  0.88 hr | 75.2
-[Res-101](https://www.dropbox.com/s/8bhldrds3mf0yuj/faster_rcnn_1_10_2504.pth?dl=0)   | 4 | 4e-3 | 8   | 10  |  0.60 hr | 74.9
-[Res-101](https://www.dropbox.com/s/5is50y01m1l9hbu/faster_rcnn_1_10_625.pth?dl=0)    | 16| 1e-2 | 8   | 10  |  0.23 hr | 75.2 
-[Res-101](https://www.dropbox.com/s/cn8gneumg4gjo9i/faster_rcnn_1_12_416.pth?dl=0)    | 24| 1e-2 | 10  | 12  |  0.17 hr | 75.1  
+[Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0)   | 1 | 1e-3 | 5   | 20   | 75.2
+[Res-101](https://www.dropbox.com/s/8bhldrds3mf0yuj/faster_rcnn_1_10_2504.pth?dl=0)   | 4 | 4e-3 | 5   | 20  | 74.9
 
 ## Credits
 [jwyang/faster-rcnn.pytorch](https://github.com/jwyang/faster-rcnn.pytorch)
